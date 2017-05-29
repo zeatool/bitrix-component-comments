@@ -37,7 +37,7 @@
             Комментариев пока нет...
         </div>
     </div>
-    <a class="btn btn-info" @click="addNew=true;addForm.parent_id=0">Добавить комментарий</a>
+    <a class="btn btn-info" @click="openMainForm">Добавить комментарий</a>
     <transition name="fade">
         <form v-if="addNew" @submit.prevent="addComment" method="post" class="comments__add_form">
             <input type="hidden" value="Y" name="add">
@@ -99,6 +99,13 @@
                 this.$data.addForm.text = '';
                 this.$data.errorForm = '';
                 this.$data.addNew = false;
+            },
+            openMainForm: function () {
+                this.$data.comments.forEach(function (elem) {
+                    elem.editMode = false;
+                })
+                this.$data.addNew=true;
+                this.$data.addForm.parent_id=0
             }
         },
         created: function () {
