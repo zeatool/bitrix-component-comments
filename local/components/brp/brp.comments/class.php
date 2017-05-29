@@ -18,30 +18,38 @@ class Comments extends \CommentsTable
 {
     /**
      * Получить список комментариев
-     * @param string $block - ID инфоблока / Код страницы
+     * @param string $type - IBLOCK/PAGE к чему привязывать комментарии (Элемент или страница)
+     * @param string $block_id - ID инфоблока / Код страницы
      * @return array - Массив комментариев
      */
-    public static function getComments($block = '')
+    public static function getComments($type, $block_id = '')
     {
-        $resComments = self::getList(array(
+        $data = array(
             'select' => array('*', new Entity\ExpressionField('FULL_PATH', 'CONCAT(%s,%s)', array('UF_MPATH', 'ID'))),
             'order' => array(
                 'FULL_PATH' => 'ASC',
                 'UF_DATE' => 'DESC'
             ),
-            'filter' => array(
-                '=UF_BLOCK' => $block
-            )
+            'filter' => array()
+        );
 
-        ));
+        switch ($type) {
+            case "IBLOCK":
+                $data['filter']['=UF_IBLOCK'] = $block_id;
+                break;
+            case "PAGE":
+                $data['filter']['=UF_BLOCK'] = $block_id;
+                break;
+        }
 
+        $resComments = self::getList($data);
         $comments = array();
 
         while ($arComment = $resComments->fetch()) {
             $arComment['LEVEL'] = substr_count($arComment['UF_MPATH'], '.');
             $arComment['UF_DATE'] = (string)$arComment['UF_DATE'];
             $arComment['editMode'] = false;
-            if($arComment['UF_USER_ID'])
+            if ($arComment['UF_USER_ID'])
                 $arComment['UF_FIO'] = self::getUserFio($arComment['UF_USER_ID']);
             $comments[] = $arComment;
         }
@@ -57,7 +65,7 @@ class Comments extends \CommentsTable
      * @param string $block - ID инфоблока / код страницы
      * @param int $user_id - ID пользователя
      */
-    public static function addComment($parent_id, $fio, $text, $block = '',$user_id=0)
+    public static function addComment($parent_id, $fio, $text, $type, $block_id = '', $user_id = 0)
     {
         $data = array(
             'UF_PARENT' => $parent_id,
@@ -65,11 +73,18 @@ class Comments extends \CommentsTable
             'UF_DATE' => new DateTime(),
             'UF_FIO' => $fio,
             'UF_TEXT' => $text,
-            'UF_BLOCK' => $block,
         );
 
-        if($user_id)
-            $data['UF_USER_ID']=$user_id;
+        switch ($type) {
+            case "IBLOCK":
+                $data['UF_IBLOCK'] = $block_id;
+                break;
+            case "PAGE":
+                $data['UF_BLOCK'] = $block_id;
+                break;
+        }
+        if ($user_id)
+            $data['UF_USER_ID'] = $user_id;
 
         $res = self::add($data);
 
